@@ -150,7 +150,6 @@
                 <button onclick="openHelpModal()" class="text-slate-500 hover:text-slate-800 underline font-medium">
                     Comment fonctionne l'Admin sur GitHub ?
                 </button>
-                <span>Code PIN Admin par défaut : <strong class="text-slate-600">1234</strong></span>
             </div>
         </div>
     </footer>
@@ -249,7 +248,7 @@
                         placeholder="••••"
                         class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 focus:border-slate-900 focus:ring-2 focus:ring-slate-900/15 outline-none text-center text-lg tracking-widest font-bold">
                     <p id="adminPinError" class="hidden text-xs text-red-600 font-medium mt-1.5">
-                        Code PIN incorrect. (Astuce : le code par défaut est 1234)
+                        Code PIN incorrect.
                     </p>
                     <p class="text-[11px] text-slate-400 mt-1.5 text-center">
                         Code de démonstration : <strong>1234</strong>
@@ -370,7 +369,7 @@
             <div class="text-xs sm:text-sm text-slate-600 space-y-3 leading-relaxed">
                 <p>
                     <strong>1. Faut-il toucher au code pour modifier la liste ?</strong><br>
-                    Non ! Cliquez sur le bouton <strong>« Admin »</strong> en haut à droite (code PIN : <code>1234</code>). Vous pouvez ajouter, éditer ou supprimer un cadeau, ses photos et ses marchands via un simple formulaire.
+                    Non ! Cliquez sur le bouton <strong>« Admin »</strong> en haut à droite. Vous pouvez ajouter, éditer ou supprimer un cadeau, ses photos et ses marchands via un simple formulaire.
                 </p>
                 <p>
                     <strong>2. Comment les réservations et ajouts sont-ils sauvegardés ?</strong><br>
@@ -401,7 +400,7 @@
         // ============================================================================
         // CONFIGURATION CODE PIN ADMINISTRATEUR (Modifiable ici si vous le souhaitez)
         // ============================================================================
-        const ADMIN_PIN = "1234";
+        const ADMIN_PIN = "2196";
 
         // Cadeaux par défaut (chargés automatiquement à la toute première ouverture)
         const DEFAULT_GIFTS = [
