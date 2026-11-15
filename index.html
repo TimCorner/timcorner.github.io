@@ -4,210 +4,1109 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Ma Liste de Noël 🎄</title>
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Police Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Icônes Lucide -->
+    <script src="https://unpkg.com/lucide@latest"></script>
     <style>
         body { font-family: 'Inter', sans-serif; }
+        /* Bandeau diagonal ou superposé pour l'effet barré rouge */
+        .reserved-ribbon {
+            background: repeating-linear-gradient(
+                -45deg,
+                #dc2626,
+                #dc2626 12px,
+                #b91c1c 12px,
+                #b91c1c 24px
+            );
+        }
+        /* Scrollbar fine */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #f1f5f9; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
     </style>
 </head>
-<body class="bg-slate-50 text-slate-800 min-h-screen pb-16">
+<body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col">
 
-    <!-- En-tête -->
-    <header class="bg-white border-b border-slate-200 sticky top-0 z-10 shadow-sm">
-        <div class="max-w-6xl mx-auto px-4 py-6 flex flex-col sm:flex-row justify-between items-center gap-4">
-            <div>
-                <h1 class="text-2xl sm:text-3xl font-bold text-slate-900 flex items-center gap-2">
-                    <span>🎄</span> Ma Liste de Noël
-                </h1>
-                <p class="text-slate-500 text-sm mt-1">
-                    Les prix sont comparés pour chaque idée. Cliquez sur un marchand pour ouvrir la page du produit.
-                </p>
+    <!-- Bannière Mode Administrateur Actif -->
+    <div id="adminBanner" class="hidden bg-amber-500 text-slate-950 px-4 py-2.5 text-sm font-semibold shadow-sm">
+        <div class="max-w-6xl mx-auto flex flex-wrap items-center justify-between gap-2">
+            <div class="flex items-center gap-2">
+                <i data-lucide="shield-check" class="w-5 h-5"></i>
+                <span>Mode Administrateur actif — Vous pouvez ajouter, modifier ou supprimer vos idées cadeaux sans toucher au code.</span>
             </div>
-            
-            <!-- Filtres et Tri -->
-            <div class="flex flex-wrap gap-2 w-full sm:w-auto justify-end">
-                <select id="categoryFilter" onchange="renderGifts()" class="bg-slate-100 border-0 rounded-lg px-3 py-2 text-sm font-medium text-slate-700 focus:ring-2 focus:ring-emerald-600 outline-none">
-                    <option value="all">Toutes les catégories</option>
-                    <option value="Tech">Tech & Audio</option>
-                    <option value="Mode">Mode & Vêtements</option>
-                    <option value="Maison">Maison & Café</option>
-                    <option value="Sport">Sport</option>
-                </select>
-                <select id="sortFilter" onchange="renderGifts()" class="bg-slate-100 border-0 rounded-lg px-3 py-2 text-sm font-medium text-slate-700 focus:ring-2 focus:ring-emerald-600 outline-none">
-                    <option value="default">Tri : Ordre de préférence</option>
-                    <option value="asc">Prix : Croissant</option>
-                    <option value="desc">Prix : Décroissant</option>
-                </select>
+            <div class="flex items-center gap-2">
+                <button onclick="openGiftModal()" class="bg-slate-900 hover:bg-slate-800 text-white px-3.5 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 transition shadow-sm">
+                    <i data-lucide="plus-circle" class="w-4 h-4"></i> Ajouter un cadeau
+                </button>
+                <button onclick="logoutAdmin()" class="bg-amber-600/30 hover:bg-amber-600/50 text-slate-950 px-3 py-1.5 rounded-lg text-xs font-bold transition">
+                    Quitter l'admin
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- En-tête principal -->
+    <header class="bg-white border-b border-slate-200 sticky top-0 z-20 shadow-sm">
+        <div class="max-w-6xl mx-auto px-4 py-5 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+            <div class="flex items-center justify-between w-full md:w-auto">
+                <div>
+                    <div class="flex items-center gap-2.5">
+                        <span class="text-3xl">🎄</span>
+                        <h1 class="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">Ma Liste de Noël</h1>
+                        <span id="syncBadge" class="inline-flex items-center gap-1 text-[11px] font-medium bg-emerald-50 text-emerald-700 border border-emerald-200 px-2 py-0.5 rounded-full">
+                            <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span> En ligne
+                        </span>
+                    </div>
+                    <p class="text-slate-500 text-xs sm:text-sm mt-1">
+                        Comparez les prix chez les marchands et réservez un cadeau en indiquant votre prénom pour éviter les doublons !
+                    </p>
+                </div>
+
+                <!-- Bouton Admin (Mobile) -->
+                <button onclick="handleAdminClick()" id="adminBtnMobile" class="md:hidden shrink-0 bg-slate-100 hover:bg-slate-200 text-slate-700 p-2.5 rounded-xl transition" title="Espace Administrateur">
+                    <i data-lucide="settings" class="w-5 h-5"></i>
+                </button>
+            </div>
+
+            <!-- Barre d'outils : Filtres, Tri et Bouton Admin -->
+            <div class="flex flex-wrap items-center gap-2.5 w-full md:w-auto justify-between md:justify-end">
+                <div class="flex flex-wrap items-center gap-2 flex-1 sm:flex-initial">
+                    <!-- Filtre Catégorie -->
+                    <select id="categoryFilter" onchange="renderGifts()" class="bg-slate-100 hover:bg-slate-200/70 border-0 rounded-xl px-3 py-2 text-xs sm:text-sm font-medium text-slate-700 focus:ring-2 focus:ring-emerald-600 outline-none transition cursor-pointer">
+                        <option value="all">Toutes les catégories</option>
+                    </select>
+
+                    <!-- Tri par prix -->
+                    <select id="sortFilter" onchange="renderGifts()" class="bg-slate-100 hover:bg-slate-200/70 border-0 rounded-xl px-3 py-2 text-xs sm:text-sm font-medium text-slate-700 focus:ring-2 focus:ring-emerald-600 outline-none transition cursor-pointer">
+                        <option value="default">Tri : Récent / Préférence</option>
+                        <option value="asc">Prix : Croissant ↑</option>
+                        <option value="desc">Prix : Décroissant ↓</option>
+                    </select>
+
+                    <!-- Filtre Masquer réservés -->
+                    <label class="inline-flex items-center gap-2 bg-slate-100 hover:bg-slate-200/70 px-3 py-2 rounded-xl text-xs sm:text-sm font-medium text-slate-700 cursor-pointer select-none transition">
+                        <input type="checkbox" id="hideReservedFilter" onchange="renderGifts()" class="rounded text-emerald-600 focus:ring-emerald-500">
+                        <span>Disponibles uniquement</span>
+                    </label>
+                </div>
+
+                <!-- Bouton Admin (Desktop) -->
+                <button onclick="handleAdminClick()" id="adminBtnDesktop" class="hidden md:inline-flex items-center gap-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 px-3.5 py-2 rounded-xl text-xs sm:text-sm font-semibold transition">
+                    <i data-lucide="settings" class="w-4 h-4"></i>
+                    <span>Admin</span>
+                </button>
             </div>
         </div>
     </header>
 
-    <!-- Grille des cadeaux -->
-    <main class="max-w-6xl mx-auto px-4 mt-8">
-        <div id="giftsGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            <!-- Généré automatiquement par le JavaScript ci-dessous -->
+    <!-- Contenu Principal -->
+    <main class="max-w-6xl mx-auto px-4 py-8 flex-1 w-full">
+        <!-- Bouton d'ajout rapide visible en mode Admin -->
+        <div id="adminQuickAdd" class="hidden mb-6 bg-white border-2 border-dashed border-amber-400 rounded-2xl p-4 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-sm">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center shrink-0">
+                    <i data-lucide="sparkles" class="w-5 h-5"></i>
+                </div>
+                <div>
+                    <h2 class="font-bold text-slate-900 text-sm sm:text-base">Gestion de votre liste sans code</h2>
+                    <p class="text-xs text-slate-500">Ajoutez un cadeau, modifiez les prix des marchands ou réinitialisez une réservation en un clic.</p>
+                </div>
+            </div>
+            <div class="flex items-center gap-2 w-full sm:w-auto justify-end">
+                <button onclick="openGiftModal()" class="w-full sm:w-auto justify-center bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2.5 rounded-xl text-sm font-bold flex items-center gap-2 transition shadow-sm">
+                    <i data-lucide="plus" class="w-4 h-4"></i> Nouveau cadeau
+                </button>
+            </div>
+        </div>
+
+        <!-- État de chargement -->
+        <div id="loadingState" class="py-20 text-center">
+            <div class="inline-block w-8 h-8 border-4 border-emerald-600 border-t-transparent rounded-full animate-spin mb-3"></div>
+            <p class="text-slate-500 text-sm font-medium">Chargement de la liste de Noël...</p>
+        </div>
+
+        <!-- Grille des cadeaux -->
+        <div id="giftsGrid" class="hidden grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
+
+        <!-- État vide -->
+        <div id="emptyState" class="hidden bg-white rounded-2xl border border-slate-200 p-12 text-center max-w-md mx-auto my-8">
+            <div class="text-4xl mb-3">🎁</div>
+            <h3 class="text-lg font-bold text-slate-900">Aucun cadeau à afficher</h3>
+            <p class="text-slate-500 text-sm mt-1">Aucun article ne correspond à vos filtres actuels, ou la liste est vide.</p>
+            <button onclick="resetFilters()" class="mt-4 bg-slate-900 text-white px-4 py-2 rounded-xl text-xs font-semibold hover:bg-slate-800 transition">
+                Réinitialiser les filtres
+            </button>
         </div>
     </main>
 
-    <script>
-        // ==========================================
-        // VOS IDÉES CADEAUX (MODIFIEZ CETTE LISTE)
-        // ==========================================
-        const giftsData = [
+    <!-- Pied de page avec explication GitHub / Admin -->
+    <footer class="bg-white border-t border-slate-200 py-6 mt-12">
+        <div class="max-w-6xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-400">
+            <p>🎄 Liste de Noël interactive — Comparateur de prix & réservation en temps réel.</p>
+            <div class="flex items-center gap-4">
+                <button onclick="openHelpModal()" class="text-slate-500 hover:text-slate-800 underline font-medium">
+                    Comment fonctionne l'Admin sur GitHub ?
+                </button>
+                <span>Code PIN Admin par défaut : <strong class="text-slate-600">1234</strong></span>
+            </div>
+        </div>
+    </footer>
+
+    <!-- ==========================================
+         MODALE 1 : RÉSERVER UN CADEAU
+    =========================================== -->
+    <div id="reserveModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 hidden items-center justify-center p-4">
+        <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-xl border border-slate-100 animate-in fade-in zoom-in-95 duration-150">
+            <div class="flex items-start justify-between gap-4 mb-4">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-xl bg-red-50 text-red-600 flex items-center justify-center shrink-0 font-bold text-lg">
+                        🎁
+                    </div>
+                    <div>
+                        <h3 class="text-lg font-bold text-slate-900">Réserver ce cadeau</h3>
+                        <p id="reserveModalGiftTitle" class="text-xs text-slate-500 line-clamp-1"></p>
+                    </div>
+                </div>
+                <button onclick="closeReserveModal()" class="text-slate-400 hover:text-slate-600 p-1">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+
+            <form onsubmit="submitReservation(event)" class="space-y-4">
+                <input type="hidden" id="reserveGiftId">
+                <div>
+                    <label for="reserverNameInput" class="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1.5">
+                        Votre prénom *
+                    </label>
+                    <input type="text" id="reserverNameInput" required maxlength="35"
+                        placeholder="Ex : Maman, Papa, Mamie, Lucas..."
+                        class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 focus:border-emerald-600 focus:ring-2 focus:ring-emerald-600/20 outline-none text-sm font-medium">
+                    <p class="text-[11px] text-slate-500 mt-1.5">
+                        Un bandeau rouge <strong>« RÉSERVÉ PAR [VOTRE PRÉNOM] »</strong> s'affichera sur ce cadeau pour éviter que quelqu'un d'autre ne l'achète en double.
+                    </p>
+                </div>
+
+                <div class="flex items-center justify-end gap-2 pt-2">
+                    <button type="button" onclick="closeReserveModal()" class="px-4 py-2.5 rounded-xl text-sm font-semibold text-slate-600 hover:bg-slate-100 transition">
+                        Annuler
+                    </button>
+                    <button type="submit" id="confirmReserveBtn" class="bg-red-600 hover:bg-red-700 text-white px-5 py-2.5 rounded-xl text-sm font-bold transition shadow-sm flex items-center gap-1.5">
+                        <span>Valider la réservation</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- ==========================================
+         MODALE 2 : ANNULER UNE RÉSERVATION
+    =========================================== -->
+    <div id="unreserveModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 hidden items-center justify-center p-4">
+        <div class="bg-white rounded-2xl max-w-sm w-full p-6 shadow-xl border border-slate-100">
+            <h3 class="text-lg font-bold text-slate-900 mb-2">Libérer ce cadeau ?</h3>
+            <p id="unreserveModalText" class="text-sm text-slate-600 mb-5"></p>
+            <input type="hidden" id="unreserveGiftId">
+            <div class="flex items-center justify-end gap-2">
+                <button type="button" onclick="closeUnreserveModal()" class="px-4 py-2 rounded-xl text-sm font-semibold text-slate-600 hover:bg-slate-100 transition">
+                    Conserver
+                </button>
+                <button type="button" onclick="confirmUnreserve()" class="bg-slate-900 hover:bg-slate-800 text-white px-4 py-2 rounded-xl text-sm font-bold transition">
+                    Oui, annuler la réservation
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==========================================
+         MODALE 3 : CONNEXION ADMIN (CODE PIN)
+    =========================================== -->
+    <div id="adminLoginModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 hidden items-center justify-center p-4">
+        <div class="bg-white rounded-2xl max-w-sm w-full p-6 shadow-xl border border-slate-100">
+            <div class="flex items-center justify-between mb-4">
+                <div class="flex items-center gap-2.5">
+                    <div class="w-9 h-9 rounded-xl bg-slate-900 text-white flex items-center justify-center">
+                        <i data-lucide="lock" class="w-4 h-4"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-base font-bold text-slate-900">Accès Administrateur</h3>
+                        <p class="text-xs text-slate-500">Modifiez vos cadeaux sans coder</p>
+                    </div>
+                </div>
+                <button onclick="closeAdminLoginModal()" class="text-slate-400 hover:text-slate-600 p-1">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+
+            <form onsubmit="submitAdminPin(event)" class="space-y-4">
+                <div>
+                    <label for="adminPinInput" class="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1.5">
+                        Code PIN Administrateur
+                    </label>
+                    <input type="password" id="adminPinInput" required
+                        placeholder="••••"
+                        class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 focus:border-slate-900 focus:ring-2 focus:ring-slate-900/15 outline-none text-center text-lg tracking-widest font-bold">
+                    <p id="adminPinError" class="hidden text-xs text-red-600 font-medium mt-1.5">
+                        Code PIN incorrect. (Astuce : le code par défaut est 1234)
+                    </p>
+                    <p class="text-[11px] text-slate-400 mt-1.5 text-center">
+                        Code de démonstration : <strong>1234</strong>
+                    </p>
+                </div>
+
+                <button type="submit" class="w-full bg-slate-900 hover:bg-slate-800 text-white py-2.5 rounded-xl text-sm font-bold transition">
+                    Déverrouiller l'espace Admin
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- ==========================================
+         MODALE 4 : AJOUTER / MODIFIER UN CADEAU (ADMIN)
+    =========================================== -->
+    <div id="giftFormModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 hidden items-center justify-center p-3 sm:p-4 overflow-y-auto">
+        <div class="bg-white rounded-2xl max-w-2xl w-full p-5 sm:p-6 shadow-xl border border-slate-100 my-8 max-h-[92vh] overflow-y-auto">
+            <div class="flex items-center justify-between pb-4 border-b border-slate-100 mb-5">
+                <div>
+                    <h3 id="giftFormTitle" class="text-lg font-bold text-slate-900">Ajouter une idée cadeau</h3>
+                    <p class="text-xs text-slate-500">Le comparateur triera automatiquement vos marchands du moins cher au plus cher.</p>
+                </div>
+                <button onclick="closeGiftModal()" class="text-slate-400 hover:text-slate-600 p-1">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+
+            <form onsubmit="saveGiftForm(event)" class="space-y-5">
+                <input type="hidden" id="editGiftId">
+
+                <!-- Titre & Catégorie -->
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div class="sm:col-span-2">
+                        <label class="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1">Nom du cadeau *</label>
+                        <input type="text" id="formGiftTitle" required placeholder="Ex : Casque Sony WH-1000XM5"
+                            class="w-full px-3.5 py-2 rounded-xl border border-slate-300 focus:border-emerald-600 outline-none text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1">Catégorie *</label>
+                        <input type="text" id="formGiftCategory" required list="categorySuggestions" placeholder="Ex : Tech, Mode..."
+                            class="w-full px-3.5 py-2 rounded-xl border border-slate-300 focus:border-emerald-600 outline-none text-sm">
+                        <datalist id="categorySuggestions">
+                            <option value="Tech & Audio">
+                            <option value="Mode & Vêtements">
+                            <option value="Maison & Déco">
+                            <option value="Culture & Livres">
+                            <option value="Sport & Loisirs">
+                        </datalist>
+                    </div>
+                </div>
+
+                <!-- Description & Badge -->
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div class="sm:col-span-2">
+                        <label class="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1">Précisions (Taille, couleur, modèle...)</label>
+                        <input type="text" id="formGiftDescription" placeholder="Ex : Taille M, Coloris Bleu Marine"
+                            class="w-full px-3.5 py-2 rounded-xl border border-slate-300 focus:border-emerald-600 outline-none text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1">Badge (Optionnel)</label>
+                        <input type="text" id="formGiftBadge" placeholder="Ex : Coup de cœur ❤️"
+                            class="w-full px-3.5 py-2 rounded-xl border border-slate-300 focus:border-emerald-600 outline-none text-sm">
+                    </div>
+                </div>
+
+                <!-- Galerie Photos (URLs dynamiques) -->
+                <div class="bg-slate-50 p-4 rounded-xl border border-slate-200">
+                    <div class="flex items-center justify-between mb-2">
+                        <div>
+                            <label class="block text-xs font-bold uppercase tracking-wider text-slate-700">Photos du cadeau *</label>
+                            <p class="text-[11px] text-slate-500">Faites clic-droit « Copier l'adresse de l'image » sur un site marchand et collez le lien ici.</p>
+                        </div>
+                        <button type="button" onclick="addImageInputRow('')" class="text-xs font-bold text-emerald-700 hover:text-emerald-800 bg-emerald-100/80 px-2.5 py-1 rounded-lg transition">
+                            + Ajouter une photo
+                        </button>
+                    </div>
+                    <div id="imageInputsContainer" class="space-y-2"></div>
+                </div>
+
+                <!-- Comparateur de prix (Marchands dynamiques) -->
+                <div class="bg-slate-50 p-4 rounded-xl border border-slate-200">
+                    <div class="flex items-center justify-between mb-2">
+                        <div>
+                            <label class="block text-xs font-bold uppercase tracking-wider text-slate-700">Comparateur de prix (Marchands) *</label>
+                            <p class="text-[11px] text-slate-500">Ajoutez 1 ou plusieurs sites où acheter ce cadeau. Le moins cher sera mis en avant automatiquement.</p>
+                        </div>
+                        <button type="button" onclick="addStoreInputRow()" class="text-xs font-bold text-emerald-700 hover:text-emerald-800 bg-emerald-100/80 px-2.5 py-1 rounded-lg transition">
+                            + Ajouter un marchand
+                        </button>
+                    </div>
+                    <div id="storeInputsContainer" class="space-y-2.5"></div>
+                </div>
+
+                <div class="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
+                    <button type="button" onclick="closeGiftModal()" class="px-4 py-2.5 rounded-xl text-sm font-semibold text-slate-600 hover:bg-slate-100 transition">
+                        Annuler
+                    </button>
+                    <button type="submit" id="saveGiftBtn" class="bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-2.5 rounded-xl text-sm font-bold transition shadow-sm">
+                        Enregistrer le cadeau
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- ==========================================
+         MODALE 5 : AIDE ARCHITECTURE GITHUB + ADMIN
+    =========================================== -->
+    <div id="helpModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 hidden items-center justify-center p-4">
+        <div class="bg-white rounded-2xl max-w-lg w-full p-6 shadow-xl border border-slate-100 max-h-[90vh] overflow-y-auto space-y-4">
+            <div class="flex items-center justify-between">
+                <h3 class="text-lg font-bold text-slate-900">Comment fonctionne l'Espace Admin ?</h3>
+                <button onclick="closeHelpModal()" class="text-slate-400 hover:text-slate-600 p-1">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+            <div class="text-xs sm:text-sm text-slate-600 space-y-3 leading-relaxed">
+                <p>
+                    <strong>1. Faut-il toucher au code pour modifier la liste ?</strong><br>
+                    Non ! Cliquez sur le bouton <strong>« Admin »</strong> en haut à droite (code PIN : <code>1234</code>). Vous pouvez ajouter, éditer ou supprimer un cadeau, ses photos et ses marchands via un simple formulaire.
+                </p>
+                <p>
+                    <strong>2. Comment les réservations et ajouts sont-ils sauvegardés ?</strong><br>
+                    Cette page est connectée en temps réel à <strong>Firebase Firestore</strong> (base de données cloud gratuite de Google). Dès qu'un proche réserve un cadeau avec son prénom ou que vous ajoutez un article, tous les visiteurs voient la mise à jour instantanément.
+                </p>
+                <p>
+                    <strong>3. Pour votre propre dépôt GitHub Pages :</strong><br>
+                    Si vous copiez ce fichier sur votre compte GitHub Pages personnel, il vous suffit de créer un projet gratuit sur <a href="https://console.firebase.google.com/" target="_blank" rel="noopener noreferrer" class="text-emerald-600 underline font-semibold">console.firebase.google.com</a> (2 minutes) et de coller votre bloc <code>firebaseConfig</code> dans la variable prévue en bas du fichier.
+                </p>
+            </div>
+            <div class="pt-2 text-right">
+                <button onclick="closeHelpModal()" class="bg-slate-900 text-white px-4 py-2 rounded-xl text-xs font-bold">J'ai compris</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notification Toast -->
+    <div id="toast" class="fixed bottom-5 right-5 z-50 hidden bg-slate-900 text-white px-4 py-3 rounded-xl shadow-lg text-xs sm:text-sm font-medium flex items-center gap-2">
+        <span id="toastText">Modification enregistrée</span>
+    </div>
+
+    <!-- Logique Application + Firebase Temps Réel -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, doc, setDoc, updateDoc, deleteDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // ============================================================================
+        // CONFIGURATION CODE PIN ADMINISTRATEUR (Modifiable ici si vous le souhaitez)
+        // ============================================================================
+        const ADMIN_PIN = "1234";
+
+        // Cadeaux par défaut (chargés automatiquement à la toute première ouverture)
+        const DEFAULT_GIFTS = [
             {
-                id: 1,
+                id: "gift-1",
                 title: "Pull col rond en laine mérinos",
-                category: "Mode",
+                category: "Mode & Vêtements",
                 badge: "Coup de cœur ❤️",
-                description: "Taille S — Coloris Bleu Marine ou Gris Anthracite.",
+                description: "Taille M — Coloris Bleu Marine ou Vert Forêt.",
                 images: [
                     "https://images.unsplash.com/photo-1620799140408-edc6dcb6d633?auto=format&fit=crop&w=800&q=80",
                     "https://images.unsplash.com/photo-1576566588028-4147f3842f27?auto=format&fit=crop&w=800&q=80"
                 ],
                 stores: [
-                    { name: "Boutique Officielle", price: 95.00, url: "https://example.com", note: "Livraison offerte" },
-                    { name: "Galeries Lafayette", price: 89.00, url: "https://example.com", note: "Promo en cours" },
-                    { name: "Place des Tendances", price: 95.00, url: "https://example.com", note: "En stock" }
-                ]
+                    { name: "Galeries Lafayette", price: 89.00, url: "https://www.galerieslafayette.com", note: "Promo fidélité" },
+                    { name: "Boutique Officielle", price: 95.00, url: "https://www.octobre-editions.com", note: "Livraison offerte" },
+                    { name: "Place des Tendances", price: 95.00, url: "https://www.placedestendances.com", note: "En stock" }
+                ],
+                reservedBy: "",
+                reservedAt: null,
+                createdAt: 1700000001000
             },
             {
-                id: 2,
+                id: "gift-2",
                 title: "Moulin à café manuel de précision",
-                category: "Maison",
+                category: "Maison & Déco",
                 badge: "Idée utile ☕",
-                description: "Modèle avec meules en acier inoxydable pour expresso.",
+                description: "Meules coniques en acier inoxydable pour cafetière italienne et expresso.",
                 images: [
                     "https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?auto=format&fit=crop&w=800&q=80"
                 ],
                 stores: [
-                    { name: "MaxiCoffee", price: 64.90, url: "https://example.com", note: "Spécialiste" },
-                    { name: "Amazon", price: 59.99, url: "https://example.com", note: "Prime disponible" },
-                    { name: "Boulanger", price: 69.99, url: "https://example.com", note: "Retrait 1h" }
-                ]
+                    { name: "Amazon", price: 59.99, url: "https://www.amazon.fr", note: "Livraison Prime" },
+                    { name: "MaxiCoffee", price: 64.90, url: "https://www.maxicoffee.com", note: "Spécialiste café" },
+                    { name: "Boulanger", price: 69.99, url: "https://www.boulanger.com", note: "Retrait 1h en magasin" }
+                ],
+                reservedBy: "",
+                reservedAt: null,
+                createdAt: 1700000002000
             },
             {
-                id: 3,
-                title: "Lampe de bureau LED articulée",
-                category: "Tech",
-                badge: "",
-                description: "Température de couleur réglable pour travailler le soir sans fatigue visuelle.",
+                id: "gift-3",
+                title: "Casque Bluetooth à réduction de bruit",
+                category: "Tech & Audio",
+                badge: "Prioritaire ⭐",
+                description: "Coloris Noir ou Argent — Autonomie 30h pour le train et le bureau.",
                 images: [
-                    "https://images.unsplash.com/photo-1534073828943-f801091bb18c?auto=format&fit=crop&w=800&q=80"
+                    "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&w=800&q=80",
+                    "https://images.unsplash.com/photo-1484704849700-f032a568e944?auto=format&fit=crop&w=800&q=80"
                 ],
                 stores: [
-                    { name: "Amazon", price: 42.50, url: "https://example.com", note: "Livraison gratuite" },
-                    { name: "Fnac", price: 49.99, url: "https://example.com", note: "En stock magasin" }
-                ]
+                    { name: "Rakuten", price: 249.00, url: "https://fr.shopping.rakuten.com", note: "Neuf import" },
+                    { name: "Fnac", price: 269.99, url: "https://www.fnac.com", note: "Retrait 1h" },
+                    { name: "Darty", price: 269.99, url: "https://www.darty.com", note: "Garantie 2 ans" }
+                ],
+                reservedBy: "Mamie Sylvie",
+                reservedAt: 1700000050000,
+                createdAt: 1700000003000
             }
         ];
 
-        // Fonction utilitaire pour trouver le prix le plus bas d'un article
+        // État de l'application en mémoire
+        let gifts = [];
+        let isAdmin = false;
+        let currentUser = null;
+        let db = null;
+        let useCloud = false;
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'liste-noel-famille';
+
+        // Affichage de notifications rapides
+        function showToast(message) {
+            const toast = document.getElementById('toast');
+            document.getElementById('toastText').textContent = message;
+            toast.classList.remove('hidden');
+            clearTimeout(window._toastTimer);
+            window._toastTimer = setTimeout(() => {
+                toast.classList.add('hidden');
+            }, 3200);
+        }
+
+        // Initialisation Firebase Firestore (ou mode mémoire autonome si exporté sans config)
+        async function initAppBackend() {
+            try {
+                if (typeof __firebase_config !== 'undefined' && __firebase_config) {
+                    const firebaseConfig = JSON.parse(__firebase_config);
+                    const app = initializeApp(firebaseConfig);
+                    const auth = getAuth(app);
+                    db = getFirestore(app);
+
+                    if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                        await signInWithCustomToken(auth, __initial_auth_token);
+                    } else {
+                        await signInAnonymously(auth);
+                    }
+
+                    onAuthStateChanged(auth, (user) => {
+                        currentUser = user;
+                        if (user) {
+                            useCloud = true;
+                            listenToGiftsCollection();
+                        }
+                    });
+                } else {
+                    // Mode démonstration autonome si ouvert hors environnement cloud
+                    gifts = [...DEFAULT_GIFTS];
+                    document.getElementById('loadingState').classList.add('hidden');
+                    updateCategoryOptions();
+                    renderGifts();
+                }
+            } catch (err) {
+                console.error("Erreur d'initialisation Cloud, bascule sur les données par défaut :", err);
+                gifts = [...DEFAULT_GIFTS];
+                document.getElementById('loadingState').classList.add('hidden');
+                updateCategoryOptions();
+                renderGifts();
+            }
+        }
+
+        // Écoute temps réel sur la collection publique Firestore
+        let seededOnce = false;
+        function listenToGiftsCollection() {
+            if (!currentUser || !db) return;
+            const giftsCol = collection(db, 'artifacts', appId, 'public', 'data', 'christmas_gifts');
+
+            onSnapshot(giftsCol, async (snapshot) => {
+                if (snapshot.empty && !seededOnce) {
+                    seededOnce = true;
+                    // On peuple avec les 3 exemples lors du tout premier lancement
+                    for (const item of DEFAULT_GIFTS) {
+                        const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'christmas_gifts', item.id);
+                        await setDoc(docRef, {
+                            ...item,
+                            imagesJson: JSON.stringify(item.images),
+                            storesJson: JSON.stringify(item.stores)
+                        });
+                    }
+                    return;
+                }
+
+                gifts = snapshot.docs.map(docSnap => {
+                    const data = docSnap.data();
+                    return {
+                        id: docSnap.id,
+                        title: data.title || "Sans titre",
+                        category: data.category || "Autre",
+                        badge: data.badge || "",
+                        description: data.description || "",
+                        images: data.imagesJson ? JSON.parse(data.imagesJson) : (data.images || []),
+                        stores: data.storesJson ? JSON.parse(data.storesJson) : (data.stores || []),
+                        reservedBy: data.reservedBy || "",
+                        reservedAt: data.reservedAt || null,
+                        createdAt: data.createdAt || Date.now()
+                    };
+                });
+
+                document.getElementById('loadingState').classList.add('hidden');
+                updateCategoryOptions();
+                renderGifts();
+            }, (error) => {
+                console.error("Erreur lecture Firestore :", error);
+                document.getElementById('loadingState').classList.add('hidden');
+            });
+        }
+
+        // Sauvegarde d'un cadeau (Cloud ou mémoire)
+        async function persistGift(giftObj) {
+            if (useCloud && currentUser && db) {
+                const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'christmas_gifts', giftObj.id);
+                await setDoc(docRef, {
+                    id: giftObj.id,
+                    title: giftObj.title,
+                    category: giftObj.category,
+                    badge: giftObj.badge || "",
+                    description: giftObj.description || "",
+                    imagesJson: JSON.stringify(giftObj.images || []),
+                    storesJson: JSON.stringify(giftObj.stores || []),
+                    reservedBy: giftObj.reservedBy || "",
+                    reservedAt: giftObj.reservedAt || null,
+                    createdAt: giftObj.createdAt || Date.now()
+                });
+            } else {
+                const idx = gifts.findIndex(g => g.id === giftObj.id);
+                if (idx >= 0) gifts[idx] = giftObj;
+                else gifts.push(giftObj);
+                updateCategoryOptions();
+                renderGifts();
+            }
+        }
+
+        // Suppression d'un cadeau
+        async function removeGiftById(giftId) {
+            if (useCloud && currentUser && db) {
+                const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'christmas_gifts', giftId);
+                await deleteDoc(docRef);
+            } else {
+                gifts = gifts.filter(g => g.id !== giftId);
+                updateCategoryOptions();
+                renderGifts();
+            }
+            showToast("Cadeau supprimé de la liste");
+        }
+
+        // Calcul du prix minimum d'un cadeau
         function getMinPrice(gift) {
-            return Math.min(...gift.stores.map(s => s.price));
+            if (!gift.stores || gift.stores.length === 0) return 0;
+            return Math.min(...gift.stores.map(s => Number(s.price) || 0));
         }
 
-        // Changement de photo au clic sur une miniature
-        function changeImage(giftId, imgUrl, btnElement) {
-            document.getElementById(`main-img-${giftId}`).src = imgUrl;
-            const buttons = btnElement.parentElement.querySelectorAll('button');
-            buttons.forEach(b => b.classList.remove('ring-2', 'ring-emerald-600'));
-            btnElement.classList.add('ring-2', 'ring-emerald-600');
+        // Mise à jour dynamique du menu déroulant des catégories
+        function updateCategoryOptions() {
+            const select = document.getElementById('categoryFilter');
+            const currentVal = select.value;
+            const categories = [...new Set(gifts.map(g => g.category).filter(Boolean))];
+
+            select.innerHTML = `<option value="all">Toutes les catégories (${gifts.length})</option>` +
+                categories.map(cat => `<option value="${escapeHtml(cat)}">${escapeHtml(cat)}</option>`).join('');
+
+            if (categories.includes(currentVal)) {
+                select.value = currentVal;
+            }
         }
 
-        // Affichage des cartes
-        function renderGifts() {
+        function escapeHtml(str) {
+            return String(str || '')
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
+
+        // Rendu principal des cartes cadeaux
+        window.renderGifts = function() {
             const category = document.getElementById('categoryFilter').value;
             const sort = document.getElementById('sortFilter').value;
+            const hideReserved = document.getElementById('hideReservedFilter').checked;
             const grid = document.getElementById('giftsGrid');
+            const emptyState = document.getElementById('emptyState');
 
-            let filtered = giftsData.filter(g => category === 'all' || g.category === category);
+            let filtered = gifts.filter(g => {
+                if (category !== 'all' && g.category !== category) return false;
+                if (hideReserved && g.reservedBy) return false;
+                return true;
+            });
 
             if (sort === 'asc') {
                 filtered.sort((a, b) => getMinPrice(a) - getMinPrice(b));
             } else if (sort === 'desc') {
                 filtered.sort((a, b) => getMinPrice(b) - getMinPrice(a));
+            } else {
+                filtered.sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0));
             }
 
+            if (filtered.length === 0) {
+                grid.classList.add('hidden');
+                emptyState.classList.remove('hidden');
+                return;
+            }
+
+            emptyState.classList.add('hidden');
+            grid.classList.remove('hidden');
+
             grid.innerHTML = filtered.map(gift => {
-                // Tri automatique des marchands du moins cher au plus cher
-                const sortedStores = [...gift.stores].sort((a, b) => a.price - b.price);
-                const bestPrice = sortedStores[0].price;
+                const sortedStores = [...(gift.stores || [])].sort((a, b) => Number(a.price) - Number(b.price));
+                const bestPrice = sortedStores.length > 0 ? Number(sortedStores[0].price) : 0;
+                const isReserved = Boolean(gift.reservedBy && gift.reservedBy.trim() !== "");
+                const mainImg = (gift.images && gift.images[0]) ? gift.images[0] : "https://placehold.co/600x400/e2e8f0/475569?text=Photo+Cadeau";
 
                 return `
-                <article class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden flex flex-col justify-between hover:shadow-md transition">
+                <article class="bg-white rounded-2xl shadow-xs border ${isReserved ? 'border-red-200 ring-1 ring-red-100' : 'border-slate-200'} overflow-hidden flex flex-col justify-between hover:shadow-md transition relative">
+                    
                     <div>
-                        <!-- Zone Photo -->
-                        <div class="relative h-60 bg-slate-100">
-                            <img id="main-img-${gift.id}" src="${gift.images[0]}" alt="${gift.title}" class="w-full h-full object-cover">
-                            <span class="absolute top-3 left-3 bg-slate-900/75 backdrop-blur-sm text-white text-xs font-medium px-2.5 py-1 rounded-full">
-                                ${gift.category}
+                        <!-- Zone Image + Bandeau Réservé -->
+                        <div class="relative h-60 bg-slate-100 overflow-hidden">
+                            <img id="main-img-${gift.id}" src="${escapeHtml(mainImg)}" alt="${escapeHtml(gift.title)}"
+                                 onerror="this.src='https://placehold.co/600x400/e2e8f0/475569?text=Image+Indisponible'"
+                                 class="w-full h-full object-cover transition duration-300 ${isReserved ? 'grayscale-[35%] opacity-80' : ''}">
+
+                            <!-- Badge Catégorie -->
+                            <span class="absolute top-3 left-3 bg-slate-900/75 backdrop-blur-xs text-white text-xs font-medium px-2.5 py-1 rounded-full">
+                                ${escapeHtml(gift.category)}
                             </span>
+
+                            <!-- Badge Coup de coeur -->
                             ${gift.badge ? `
-                            <span class="absolute top-3 right-3 bg-amber-400 text-slate-950 text-xs font-bold px-2.5 py-1 rounded-full shadow-sm">
-                                ${gift.badge}
+                            <span class="absolute top-3 right-3 bg-amber-400 text-slate-950 text-xs font-bold px-2.5 py-1 rounded-full shadow-xs">
+                                ${escapeHtml(gift.badge)}
                             </span>` : ''}
+
+                            <!-- BANDEAU ROUGE BARRÉ SI RÉSERVÉ -->
+                            ${isReserved ? `
+                            <div class="absolute inset-0 bg-slate-900/25 flex items-center justify-center pointer-events-none">
+                                <div class="reserved-ribbon w-full py-2.5 px-4 text-center shadow-lg transform -rotate-6 border-y-2 border-white/80">
+                                    <span class="text-white font-extrabold text-sm sm:text-base tracking-wider uppercase drop-shadow-xs line-through decoration-white/90 decoration-2">
+                                        RÉSERVÉ PAR ${escapeHtml(gift.reservedBy)}
+                                    </span>
+                                </div>
+                            </div>` : ''}
                         </div>
 
-                        <!-- Miniatures (si plusieurs photos) -->
-                        ${gift.images.length > 1 ? `
-                        <div class="flex gap-2 px-4 pt-3">
+                        <!-- Miniatures Galerie -->
+                        ${gift.images && gift.images.length > 1 ? `
+                        <div class="flex gap-2 px-4 pt-3 overflow-x-auto">
                             ${gift.images.map((img, idx) => `
-                                <button onclick="changeImage(${gift.id}, '${img}', this)" class="w-12 h-12 rounded-lg overflow-hidden border border-slate-200 ${idx === 0 ? 'ring-2 ring-emerald-600' : ''}">
-                                    <img src="${img}" class="w-full h-full object-cover">
+                                <button type="button" onclick="changeGiftImage('${gift.id}', '${escapeHtml(img)}', this)"
+                                        class="w-11 h-11 rounded-lg overflow-hidden border border-slate-200 shrink-0 transition ${idx === 0 ? 'ring-2 ring-emerald-600' : 'opacity-70 hover:opacity-100'}">
+                                    <img src="${escapeHtml(img)}" class="w-full h-full object-cover" onerror="this.src='https://placehold.co/100x100/e2e8f0/475569?text=Img'">
                                 </button>
                             `).join('')}
                         </div>` : ''}
 
-                        <!-- Titre & Description -->
+                        <!-- Titre, Prix min et Description -->
                         <div class="p-5 pb-3">
-                            <div class="flex justify-between items-start gap-2">
-                                <h2 class="text-lg font-bold text-slate-900 leading-snug">${gift.title}</h2>
+                            <div class="flex justify-between items-start gap-3">
+                                <h2 class="text-lg font-bold text-slate-900 leading-snug ${isReserved ? 'line-through text-slate-400' : ''}">
+                                    ${escapeHtml(gift.title)}
+                                </h2>
                                 <div class="text-right shrink-0">
-                                    <span class="text-xs text-slate-400 block">À partir de</span>
-                                    <span class="text-lg font-extrabold text-emerald-600">${bestPrice.toFixed(2).replace('.', ',')} €</span>
+                                    <span class="text-[11px] text-slate-400 block">À partir de</span>
+                                    <span class="text-lg font-extrabold ${isReserved ? 'text-slate-400' : 'text-emerald-600'}">
+                                        ${bestPrice.toFixed(2).replace('.', ',')} €
+                                    </span>
                                 </div>
                             </div>
-                            <p class="text-slate-600 text-sm mt-2">${gift.description}</p>
+                            ${gift.description ? `<p class="text-slate-600 text-xs sm:text-sm mt-2">${escapeHtml(gift.description)}</p>` : ''}
                         </div>
                     </div>
 
-                    <!-- Comparateur de prix intégré -->
-                    <div class="p-5 pt-2 border-t border-slate-100 bg-slate-50/50">
-                        <p class="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2.5">
-                            Comparateur de prix (${sortedStores.length} ${sortedStores.length > 1 ? 'offres' : 'offre'})
-                        </p>
-                        <div class="space-y-2">
-                            ${sortedStores.map((store, index) => `
-                                <a href="${store.url}" target="_blank" rel="noopener noreferrer" 
-                                   class="flex items-center justify-between p-2.5 rounded-xl border transition group ${index === 0 ? 'bg-emerald-50/70 border-emerald-200 hover:bg-emerald-100/70' : 'bg-white border-slate-200 hover:border-slate-300'}">
-                                    <div class="flex items-center gap-2">
-                                        <div>
-                                            <div class="flex items-center gap-1.5">
-                                                <span class="font-semibold text-sm text-slate-800">${store.name}</span>
-                                                ${index === 0 && sortedStores.length > 1 ? `<span class="text-[10px] font-bold bg-emerald-600 text-white px-1.5 py-0.5 rounded">Moins cher</span>` : ''}
+                    <!-- Bas de carte : Comparateur + Bouton Réservation + Outils Admin -->
+                    <div class="p-5 pt-3 border-t border-slate-100 bg-slate-50/60 space-y-4">
+                        <!-- Comparateur de prix -->
+                        <div>
+                            <p class="text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-2">
+                                Comparateur de prix (${sortedStores.length} ${sortedStores.length > 1 ? 'marchands' : 'marchand'})
+                            </p>
+                            <div class="space-y-1.5">
+                                ${sortedStores.map((store, index) => `
+                                    <a href="${escapeHtml(store.url)}" target="_blank" rel="noopener noreferrer"
+                                       class="flex items-center justify-between p-2.5 rounded-xl border transition group ${index === 0 ? 'bg-emerald-50/80 border-emerald-200 hover:bg-emerald-100/70' : 'bg-white border-slate-200 hover:border-slate-300'}">
+                                        <div class="min-w-0 pr-2">
+                                            <div class="flex items-center gap-1.5 flex-wrap">
+                                                <span class="font-semibold text-xs sm:text-sm text-slate-800 truncate">${escapeHtml(store.name)}</span>
+                                                ${index === 0 && sortedStores.length > 1 ? `
+                                                    <span class="text-[10px] font-bold bg-emerald-600 text-white px-1.5 py-0.5 rounded-md">Moins cher</span>
+                                                ` : ''}
                                             </div>
-                                            ${store.note ? `<span class="text-xs text-slate-500 block">${store.note}</span>` : ''}
+                                            ${store.note ? `<span class="text-[11px] text-slate-500 block truncate">${escapeHtml(store.note)}</span>` : ''}
                                         </div>
-                                    </div>
-                                    <div class="flex items-center gap-2">
-                                        <span class="font-bold text-sm ${index === 0 ? 'text-emerald-700' : 'text-slate-700'}">
-                                            ${store.price.toFixed(2).replace('.', ',')} €
-                                        </span>
-                                        <span class="text-xs bg-slate-900 text-white px-2.5 py-1.5 rounded-lg group-hover:bg-emerald-600 transition">
-                                            Voir ↗
-                                        </span>
-                                    </div>
-                                </a>
-                            `).join('')}
+                                        <div class="flex items-center gap-2 shrink-0">
+                                            <span class="font-bold text-xs sm:text-sm ${index === 0 ? 'text-emerald-700' : 'text-slate-700'}">
+                                                ${Number(store.price).toFixed(2).replace('.', ',')} €
+                                            </span>
+                                            <span class="text-xs bg-slate-900 text-white px-2.5 py-1 rounded-lg group-hover:bg-emerald-600 transition font-medium">
+                                                Voir ↗
+                                            </span>
+                                        </div>
+                                    </a>
+                                `).join('')}
+                            </div>
                         </div>
+
+                        <!-- Zone d'action : Réserver ou Bandeau Réservé -->
+                        <div class="pt-1">
+                            ${!isReserved ? `
+                                <button type="button" onclick="openReserveModal('${gift.id}')"
+                                    class="w-full bg-slate-900 hover:bg-red-600 text-white font-bold text-xs sm:text-sm py-2.5 px-4 rounded-xl transition flex items-center justify-center gap-2 shadow-xs">
+                                    <span>🎁 Réserver ce cadeau</span>
+                                </button>
+                            ` : `
+                                <div class="bg-red-50 border border-red-200 rounded-xl p-2.5 flex items-center justify-between gap-2">
+                                    <div class="flex items-center gap-2 min-w-0">
+                                        <span class="w-2 h-2 rounded-full bg-red-600 shrink-0"></span>
+                                        <span class="text-xs font-bold text-red-800 truncate line-through">
+                                            Réservé par ${escapeHtml(gift.reservedBy)}
+                                        </span>
+                                    </div>
+                                    <button type="button" onclick="openUnreserveModal('${gift.id}')"
+                                        class="text-[11px] font-semibold text-red-700 hover:text-red-900 underline shrink-0">
+                                        Annuler
+                                    </button>
+                                </div>
+                            `}
+                        </div>
+
+                        <!-- Barre d'édition visible uniquement en mode Administrateur -->
+                        ${isAdmin ? `
+                            <div class="pt-2 border-t border-amber-200/80 flex items-center justify-between gap-2">
+                                <span class="text-[11px] font-bold text-amber-800 uppercase tracking-wider">Actions Admin :</span>
+                                <div class="flex items-center gap-1.5">
+                                    <button type="button" onclick="openGiftModal('${gift.id}')"
+                                        class="bg-amber-100 hover:bg-amber-200 text-amber-950 px-2.5 py-1 rounded-lg text-xs font-semibold transition">
+                                        ✏️ Modifier
+                                    </button>
+                                    <button type="button" onclick="deleteGiftConfirm('${gift.id}')"
+                                        class="bg-red-100 hover:bg-red-200 text-red-800 px-2.5 py-1 rounded-lg text-xs font-semibold transition">
+                                        🗑️ Supprimer
+                                    </button>
+                                </div>
+                            </div>
+                        ` : ''}
                     </div>
                 </article>
                 `;
             }).join('');
+
+            if (window.lucide) window.lucide.createIcons();
+        };
+
+        // Changement de miniature photo
+        window.changeGiftImage = function(giftId, imgUrl, btnEl) {
+            const imgEl = document.getElementById(`main-img-${giftId}`);
+            if (imgEl) imgEl.src = imgUrl;
+            const buttons = btnEl.parentElement.querySelectorAll('button');
+            buttons.forEach(b => {
+                b.classList.remove('ring-2', 'ring-emerald-600');
+                b.classList.add('opacity-70');
+            });
+            btnEl.classList.add('ring-2', 'ring-emerald-600');
+            btnEl.classList.remove('opacity-70');
+        };
+
+        window.resetFilters = function() {
+            document.getElementById('categoryFilter').value = 'all';
+            document.getElementById('sortFilter').value = 'default';
+            document.getElementById('hideReservedFilter').checked = false;
+            renderGifts();
+        };
+
+        // ============================================================================
+        // SYSTÈME DE RÉSERVATION PAR PRÉNOM
+        // ============================================================================
+        window.openReserveModal = function(giftId) {
+            const gift = gifts.find(g => g.id === giftId);
+            if (!gift) return;
+            document.getElementById('reserveGiftId').value = giftId;
+            document.getElementById('reserveModalGiftTitle').textContent = gift.title;
+            document.getElementById('reserverNameInput').value = '';
+            const modal = document.getElementById('reserveModal');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            setTimeout(() => document.getElementById('reserverNameInput').focus(), 50);
+        };
+
+        window.closeReserveModal = function() {
+            const modal = document.getElementById('reserveModal');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        };
+
+        window.submitReservation = async function(e) {
+            e.preventDefault();
+            const giftId = document.getElementById('reserveGiftId').value;
+            const name = document.getElementById('reserverNameInput').value.trim();
+            if (!name) return;
+
+            const gift = gifts.find(g => g.id === giftId);
+            if (!gift) return;
+
+            const updatedGift = {
+                ...gift,
+                reservedBy: name,
+                reservedAt: Date.now()
+            };
+
+            closeReserveModal();
+            await persistGift(updatedGift);
+            showToast(`Merci ${name} ! Le cadeau est marqué comme réservé 🎁`);
+        };
+
+        window.openUnreserveModal = function(giftId) {
+            const gift = gifts.find(g => g.id === giftId);
+            if (!gift) return;
+            document.getElementById('unreserveGiftId').value = giftId;
+            document.getElementById('unreserveModalText').textContent =
+                `Ce cadeau est actuellement réservé par « ${gift.reservedBy} ». Voulez-vous retirer cette réservation ?`;
+            const modal = document.getElementById('unreserveModal');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        };
+
+        window.closeUnreserveModal = function() {
+            const modal = document.getElementById('unreserveModal');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        };
+
+        window.confirmUnreserve = async function() {
+            const giftId = document.getElementById('unreserveGiftId').value;
+            const gift = gifts.find(g => g.id === giftId);
+            if (!gift) return;
+
+            const updatedGift = {
+                ...gift,
+                reservedBy: "",
+                reservedAt: null
+            };
+            closeUnreserveModal();
+            await persistGift(updatedGift);
+            showToast("La réservation a été annulée.");
+        };
+
+        // ============================================================================
+        // ESPACE ADMINISTRATEUR SANS CODE
+        // ============================================================================
+        window.handleAdminClick = function() {
+            if (isAdmin) {
+                openGiftModal();
+            } else {
+                document.getElementById('adminPinInput').value = '';
+                document.getElementById('adminPinError').classList.add('hidden');
+                const modal = document.getElementById('adminLoginModal');
+                modal.classList.remove('hidden');
+                modal.classList.add('flex');
+                setTimeout(() => document.getElementById('adminPinInput').focus(), 50);
+            }
+        };
+
+        window.closeAdminLoginModal = function() {
+            const modal = document.getElementById('adminLoginModal');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        };
+
+        window.submitAdminPin = function(e) {
+            e.preventDefault();
+            const pin = document.getElementById('adminPinInput').value.trim();
+            if (pin === ADMIN_PIN) {
+                isAdmin = true;
+                closeAdminLoginModal();
+                updateAdminUI();
+                renderGifts();
+                showToast("Mode Administrateur activé !");
+            } else {
+                document.getElementById('adminPinError').classList.remove('hidden');
+            }
+        };
+
+        window.logoutAdmin = function() {
+            isAdmin = false;
+            updateAdminUI();
+            renderGifts();
+            showToast("Mode Administrateur désactivé");
+        };
+
+        function updateAdminUI() {
+            const banner = document.getElementById('adminBanner');
+            const quickAdd = document.getElementById('adminQuickAdd');
+            const btnDesktop = document.getElementById('adminBtnDesktop');
+
+            if (isAdmin) {
+                banner.classList.remove('hidden');
+                quickAdd.classList.remove('hidden');
+                btnDesktop.innerHTML = `<i data-lucide="plus" class="w-4 h-4"></i><span>Ajouter un cadeau</span>`;
+                btnDesktop.classList.replace('bg-slate-100', 'bg-amber-400');
+                btnDesktop.classList.replace('text-slate-700', 'text-slate-950');
+            } else {
+                banner.classList.add('hidden');
+                quickAdd.classList.add('hidden');
+                btnDesktop.innerHTML = `<i data-lucide="settings" class="w-4 h-4"></i><span>Admin</span>`;
+                btnDesktop.classList.replace('bg-amber-400', 'bg-slate-100');
+                btnDesktop.classList.replace('text-slate-950', 'text-slate-700');
+            }
+            if (window.lucide) window.lucide.createIcons();
         }
 
-        // Initialisation au chargement
-        renderGifts();
+        // Formulaire d'ajout ou modification d'un cadeau
+        window.openGiftModal = function(giftId = null) {
+            const modal = document.getElementById('giftFormModal');
+            const imgContainer = document.getElementById('imageInputsContainer');
+            const storeContainer = document.getElementById('storeInputsContainer');
+            imgContainer.innerHTML = '';
+            storeContainer.innerHTML = '';
+
+            if (giftId) {
+                const gift = gifts.find(g => g.id === giftId);
+                if (!gift) return;
+                document.getElementById('giftFormTitle').textContent = "Modifier le cadeau";
+                document.getElementById('editGiftId').value = gift.id;
+                document.getElementById('formGiftTitle').value = gift.title;
+                document.getElementById('formGiftCategory').value = gift.category;
+                document.getElementById('formGiftDescription').value = gift.description || '';
+                document.getElementById('formGiftBadge').value = gift.badge || '';
+
+                (gift.images && gift.images.length ? gift.images : ['']).forEach(url => addImageInputRow(url));
+                (gift.stores && gift.stores.length ? gift.stores : [{ name: '', price: '', url: '', note: '' }])
+                    .forEach(s => addStoreInputRow(s));
+            } else {
+                document.getElementById('giftFormTitle').textContent = "Ajouter une idée cadeau";
+                document.getElementById('editGiftId').value = '';
+                document.getElementById('formGiftTitle').value = '';
+                document.getElementById('formGiftCategory').value = 'Tech & Audio';
+                document.getElementById('formGiftDescription').value = '';
+                document.getElementById('formGiftBadge').value = '';
+
+                addImageInputRow('');
+                addStoreInputRow({ name: 'Amazon', price: '', url: '', note: 'Livraison gratuite' });
+            }
+
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        };
+
+        window.closeGiftModal = function() {
+            const modal = document.getElementById('giftFormModal');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        };
+
+        window.addImageInputRow = function(value = '') {
+            const container = document.getElementById('imageInputsContainer');
+            const row = document.createElement('div');
+            row.className = 'flex items-center gap-2';
+            row.innerHTML = `
+                <input type="url" required placeholder="https://exemple.com/photo-produit.jpg" value="${escapeHtml(value)}"
+                    class="gift-image-input flex-1 px-3 py-2 rounded-xl border border-slate-300 focus:border-emerald-600 outline-none text-xs sm:text-sm bg-white">
+                <button type="button" onclick="if(document.querySelectorAll('.gift-image-input').length > 1) this.parentElement.remove()"
+                    class="text-slate-400 hover:text-red-600 px-2 py-1 text-xs font-bold" title="Retirer cette photo">✕</button>
+            `;
+            container.appendChild(row);
+        };
+
+        window.addStoreInputRow = function(store = { name: '', price: '', url: '', note: '' }) {
+            const container = document.getElementById('storeInputsContainer');
+            const row = document.createElement('div');
+            row.className = 'store-row grid grid-cols-1 sm:grid-cols-12 gap-2 bg-white p-2.5 rounded-xl border border-slate-200 items-center';
+            row.innerHTML = `
+                <div class="sm:col-span-3">
+                    <input type="text" required placeholder="Marchand (ex: Fnac)" value="${escapeHtml(store.name)}"
+                        class="store-name w-full px-2.5 py-1.5 rounded-lg border border-slate-300 text-xs sm:text-sm outline-none focus:border-emerald-600">
+                </div>
+                <div class="sm:col-span-2">
+                    <input type="number" step="0.01" min="0" required placeholder="Prix €" value="${store.price !== '' ? Number(store.price) : ''}"
+                        class="store-price w-full px-2.5 py-1.5 rounded-lg border border-slate-300 text-xs sm:text-sm outline-none focus:border-emerald-600">
+                </div>
+                <div class="sm:col-span-4">
+                    <input type="url" required placeholder="Lien https://..." value="${escapeHtml(store.url)}"
+                        class="store-url w-full px-2.5 py-1.5 rounded-lg border border-slate-300 text-xs sm:text-sm outline-none focus:border-emerald-600">
+                </div>
+                <div class="sm:col-span-2">
+                    <input type="text" placeholder="Note (ex: En stock)" value="${escapeHtml(store.note || '')}"
+                        class="store-note w-full px-2.5 py-1.5 rounded-lg border border-slate-300 text-xs sm:text-sm outline-none focus:border-emerald-600">
+                </div>
+                <div class="sm:col-span-1 text-right">
+                    <button type="button" onclick="if(document.querySelectorAll('.store-row').length > 1) this.closest('.store-row').remove()"
+                        class="text-slate-400 hover:text-red-600 px-2 py-1 text-xs font-bold" title="Supprimer ce marchand">✕</button>
+                </div>
+            `;
+            container.appendChild(row);
+        };
+
+        window.saveGiftForm = async function(e) {
+            e.preventDefault();
+            const editId = document.getElementById('editGiftId').value;
+            const existing = editId ? gifts.find(g => g.id === editId) : null;
+
+            const images = Array.from(document.querySelectorAll('.gift-image-input'))
+                .map(input => input.value.trim())
+                .filter(Boolean);
+
+            const stores = Array.from(document.querySelectorAll('.store-row')).map(row => ({
+                name: row.querySelector('.store-name').value.trim(),
+                price: parseFloat(row.querySelector('.store-price').value) || 0,
+                url: row.querySelector('.store-url').value.trim(),
+                note: row.querySelector('.store-note').value.trim()
+            })).filter(s => s.name && s.url);
+
+            const giftObj = {
+                id: editId || ('gift-' + Date.now()),
+                title: document.getElementById('formGiftTitle').value.trim(),
+                category: document.getElementById('formGiftCategory').value.trim() || 'Autre',
+                description: document.getElementById('formGiftDescription').value.trim(),
+                badge: document.getElementById('formGiftBadge').value.trim(),
+                images: images.length ? images : ['https://placehold.co/600x400/e2e8f0/475569?text=Cadeau'],
+                stores: stores,
+                reservedBy: existing ? existing.reservedBy : "",
+                reservedAt: existing ? existing.reservedAt : null,
+                createdAt: existing ? existing.createdAt : Date.now()
+            };
+
+            closeGiftModal();
+            await persistGift(giftObj);
+            showToast(editId ? "Cadeau mis à jour !" : "Nouveau cadeau ajouté à la liste !");
+        };
+
+        window.deleteGiftConfirm = async function(giftId) {
+            await removeGiftById(giftId);
+        };
+
+        window.openHelpModal = function() {
+            const modal = document.getElementById('helpModal');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        };
+
+        window.closeHelpModal = function() {
+            const modal = document.getElementById('helpModal');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        };
+
+        // Lancement au chargement
+        window.addEventListener('DOMContentLoaded', () => {
+            if (window.lucide) window.lucide.createIcons();
+            initAppBackend();
+        });
     </script>
 </body>
 </html>
