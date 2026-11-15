@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ma Liste de Noël 🎄</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen pb-16">
+
+    <!-- En-tête -->
+    <header class="bg-white border-b border-slate-200 sticky top-0 z-10 shadow-sm">
+        <div class="max-w-6xl mx-auto px-4 py-6 flex flex-col sm:flex-row justify-between items-center gap-4">
+            <div>
+                <h1 class="text-2xl sm:text-3xl font-bold text-slate-900 flex items-center gap-2">
+                    <span>🎄</span> Ma Liste de Noël
+                </h1>
+                <p class="text-slate-500 text-sm mt-1">
+                    Les prix sont comparés pour chaque idée. Cliquez sur un marchand pour ouvrir la page du produit.
+                </p>
+            </div>
+            
+            <!-- Filtres et Tri -->
+            <div class="flex flex-wrap gap-2 w-full sm:w-auto justify-end">
+                <select id="categoryFilter" onchange="renderGifts()" class="bg-slate-100 border-0 rounded-lg px-3 py-2 text-sm font-medium text-slate-700 focus:ring-2 focus:ring-emerald-600 outline-none">
+                    <option value="all">Toutes les catégories</option>
+                    <option value="Tech">Tech & Audio</option>
+                    <option value="Mode">Mode & Vêtements</option>
+                    <option value="Maison">Maison & Café</option>
+                    <option value="Sport">Sport</option>
+                </select>
+                <select id="sortFilter" onchange="renderGifts()" class="bg-slate-100 border-0 rounded-lg px-3 py-2 text-sm font-medium text-slate-700 focus:ring-2 focus:ring-emerald-600 outline-none">
+                    <option value="default">Tri : Ordre de préférence</option>
+                    <option value="asc">Prix : Croissant</option>
+                    <option value="desc">Prix : Décroissant</option>
+                </select>
+            </div>
+        </div>
+    </header>
+
+    <!-- Grille des cadeaux -->
+    <main class="max-w-6xl mx-auto px-4 mt-8">
+        <div id="giftsGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <!-- Généré automatiquement par le JavaScript ci-dessous -->
+        </div>
+    </main>
+
+    <script>
+        // ==========================================
+        // VOS IDÉES CADEAUX (MODIFIEZ CETTE LISTE)
+        // ==========================================
+        const giftsData = [
+            {
+                id: 1,
+                title: "Pull col rond en laine mérinos",
+                category: "Mode",
+                badge: "Coup de cœur ❤️",
+                description: "Taille S — Coloris Bleu Marine ou Gris Anthracite.",
+                images: [
+                    "https://images.unsplash.com/photo-1620799140408-edc6dcb6d633?auto=format&fit=crop&w=800&q=80",
+                    "https://images.unsplash.com/photo-1576566588028-4147f3842f27?auto=format&fit=crop&w=800&q=80"
+                ],
+                stores: [
+                    { name: "Boutique Officielle", price: 95.00, url: "https://example.com", note: "Livraison offerte" },
+                    { name: "Galeries Lafayette", price: 89.00, url: "https://example.com", note: "Promo en cours" },
+                    { name: "Place des Tendances", price: 95.00, url: "https://example.com", note: "En stock" }
+                ]
+            },
+            {
+                id: 2,
+                title: "Moulin à café manuel de précision",
+                category: "Maison",
+                badge: "Idée utile ☕",
+                description: "Modèle avec meules en acier inoxydable pour expresso.",
+                images: [
+                    "https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?auto=format&fit=crop&w=800&q=80"
+                ],
+                stores: [
+                    { name: "MaxiCoffee", price: 64.90, url: "https://example.com", note: "Spécialiste" },
+                    { name: "Amazon", price: 59.99, url: "https://example.com", note: "Prime disponible" },
+                    { name: "Boulanger", price: 69.99, url: "https://example.com", note: "Retrait 1h" }
+                ]
+            },
+            {
+                id: 3,
+                title: "Lampe de bureau LED articulée",
+                category: "Tech",
+                badge: "",
+                description: "Température de couleur réglable pour travailler le soir sans fatigue visuelle.",
+                images: [
+                    "https://images.unsplash.com/photo-1534073828943-f801091bb18c?auto=format&fit=crop&w=800&q=80"
+                ],
+                stores: [
+                    { name: "Amazon", price: 42.50, url: "https://example.com", note: "Livraison gratuite" },
+                    { name: "Fnac", price: 49.99, url: "https://example.com", note: "En stock magasin" }
+                ]
+            }
+        ];
+
+        // Fonction utilitaire pour trouver le prix le plus bas d'un article
+        function getMinPrice(gift) {
+            return Math.min(...gift.stores.map(s => s.price));
+        }
+
+        // Changement de photo au clic sur une miniature
+        function changeImage(giftId, imgUrl, btnElement) {
+            document.getElementById(`main-img-${giftId}`).src = imgUrl;
+            const buttons = btnElement.parentElement.querySelectorAll('button');
+            buttons.forEach(b => b.classList.remove('ring-2', 'ring-emerald-600'));
+            btnElement.classList.add('ring-2', 'ring-emerald-600');
+        }
+
+        // Affichage des cartes
+        function renderGifts() {
+            const category = document.getElementById('categoryFilter').value;
+            const sort = document.getElementById('sortFilter').value;
+            const grid = document.getElementById('giftsGrid');
+
+            let filtered = giftsData.filter(g => category === 'all' || g.category === category);
+
+            if (sort === 'asc') {
+                filtered.sort((a, b) => getMinPrice(a) - getMinPrice(b));
+            } else if (sort === 'desc') {
+                filtered.sort((a, b) => getMinPrice(b) - getMinPrice(a));
+            }
+
+            grid.innerHTML = filtered.map(gift => {
+                // Tri automatique des marchands du moins cher au plus cher
+                const sortedStores = [...gift.stores].sort((a, b) => a.price - b.price);
+                const bestPrice = sortedStores[0].price;
+
+                return `
+                <article class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden flex flex-col justify-between hover:shadow-md transition">
+                    <div>
+                        <!-- Zone Photo -->
+                        <div class="relative h-60 bg-slate-100">
+                            <img id="main-img-${gift.id}" src="${gift.images[0]}" alt="${gift.title}" class="w-full h-full object-cover">
+                            <span class="absolute top-3 left-3 bg-slate-900/75 backdrop-blur-sm text-white text-xs font-medium px-2.5 py-1 rounded-full">
+                                ${gift.category}
+                            </span>
+                            ${gift.badge ? `
+                            <span class="absolute top-3 right-3 bg-amber-400 text-slate-950 text-xs font-bold px-2.5 py-1 rounded-full shadow-sm">
+                                ${gift.badge}
+                            </span>` : ''}
+                        </div>
+
+                        <!-- Miniatures (si plusieurs photos) -->
+                        ${gift.images.length > 1 ? `
+                        <div class="flex gap-2 px-4 pt-3">
+                            ${gift.images.map((img, idx) => `
+                                <button onclick="changeImage(${gift.id}, '${img}', this)" class="w-12 h-12 rounded-lg overflow-hidden border border-slate-200 ${idx === 0 ? 'ring-2 ring-emerald-600' : ''}">
+                                    <img src="${img}" class="w-full h-full object-cover">
+                                </button>
+                            `).join('')}
+                        </div>` : ''}
+
+                        <!-- Titre & Description -->
+                        <div class="p-5 pb-3">
+                            <div class="flex justify-between items-start gap-2">
+                                <h2 class="text-lg font-bold text-slate-900 leading-snug">${gift.title}</h2>
+                                <div class="text-right shrink-0">
+                                    <span class="text-xs text-slate-400 block">À partir de</span>
+                                    <span class="text-lg font-extrabold text-emerald-600">${bestPrice.toFixed(2).replace('.', ',')} €</span>
+                                </div>
+                            </div>
+                            <p class="text-slate-600 text-sm mt-2">${gift.description}</p>
+                        </div>
+                    </div>
+
+                    <!-- Comparateur de prix intégré -->
+                    <div class="p-5 pt-2 border-t border-slate-100 bg-slate-50/50">
+                        <p class="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2.5">
+                            Comparateur de prix (${sortedStores.length} ${sortedStores.length > 1 ? 'offres' : 'offre'})
+                        </p>
+                        <div class="space-y-2">
+                            ${sortedStores.map((store, index) => `
+                                <a href="${store.url}" target="_blank" rel="noopener noreferrer" 
+                                   class="flex items-center justify-between p-2.5 rounded-xl border transition group ${index === 0 ? 'bg-emerald-50/70 border-emerald-200 hover:bg-emerald-100/70' : 'bg-white border-slate-200 hover:border-slate-300'}">
+                                    <div class="flex items-center gap-2">
+                                        <div>
+                                            <div class="flex items-center gap-1.5">
+                                                <span class="font-semibold text-sm text-slate-800">${store.name}</span>
+                                                ${index === 0 && sortedStores.length > 1 ? `<span class="text-[10px] font-bold bg-emerald-600 text-white px-1.5 py-0.5 rounded">Moins cher</span>` : ''}
+                                            </div>
+                                            ${store.note ? `<span class="text-xs text-slate-500 block">${store.note}</span>` : ''}
+                                        </div>
+                                    </div>
+                                    <div class="flex items-center gap-2">
+                                        <span class="font-bold text-sm ${index === 0 ? 'text-emerald-700' : 'text-slate-700'}">
+                                            ${store.price.toFixed(2).replace('.', ',')} €
+                                        </span>
+                                        <span class="text-xs bg-slate-900 text-white px-2.5 py-1.5 rounded-lg group-hover:bg-emerald-600 transition">
+                                            Voir ↗
+                                        </span>
+                                    </div>
+                                </a>
+                            `).join('')}
+                        </div>
+                    </div>
+                </article>
+                `;
+            }).join('');
+        }
+
+        // Initialisation au chargement
+        renderGifts();
+    </script>
+</body>
+</html>
